@@ -19,7 +19,6 @@ export interface RateLimiter {
   getWaitTime(): number
 }
 
-// Token Bucket Rate Limiter
 export class TokenBucket implements RateLimiter {
   private tokens: number
   private lastRefill: number
@@ -27,9 +26,9 @@ export class TokenBucket implements RateLimiter {
   private readonly refillRate: number // tokens per second
 
   constructor(capacity: number, refillPeriodMs: number) {
-    this.capacity = capacity
-    this.tokens = capacity
-    this.refillRate = capacity / (refillPeriodMs / 1000)
+    this.capacity = Math.max(1, capacity)
+    this.tokens = this.capacity
+    this.refillRate = this.capacity / Math.max(1000, refillPeriodMs / 1000)
     this.lastRefill = Date.now()
   }
 
@@ -40,7 +39,7 @@ export class TokenBucket implements RateLimiter {
 
   recordRequest(): void {
     if (this.canMakeRequest()) {
-      this.tokens -= 1
+      this.tokens = Math.max(0, this.tokens - 1)
     }
   }
 
@@ -59,12 +58,23 @@ export class TokenBucket implements RateLimiter {
   }
 }
 
-// Advanced Caching System
 export class APICache {
   private cache = new Map<string, CacheEntry>()
   private readonly defaultTTL = 15 * 60 * 1000 // 15 minutes
+  private readonly maxSize = 100 // Maximum cache entries
 
   set<T>(key: string, data: T, ttl?: number): void {
+    // Remove expired entries and enforce size limit
+    this.cleanup()
+
+    if (this.cache.size >= this.maxSize) {
+      // Remove oldest entry
+      const firstKey = this.cache.keys().next().value
+      if (firstKey) {
+        this.cache.delete(firstKey)
+      }
+    }
+
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -82,6 +92,15 @@ export class APICache {
     }
 
     return entry.data as T
+  }
+
+  private cleanup(): void {
+    const now = Date.now()
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > entry.ttl) {
+        this.cache.delete(key)
+      }
+    }
   }
 
   clear(): void {
@@ -116,19 +135,23 @@ export class CORSProxy {
   }
 }
 
-// Retry Logic with Exponential Backoff
 export async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, baseDelay = 1000): Promise<T> {
   let lastError: Error
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await fn()
+      return await Promise.race([
+        fn(),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Request timeout")), 30000)),
+      ])
     } catch (error) {
       lastError = error as Error
+      console.error(`[v0] Attempt ${attempt + 1} failed:`, lastError.message)
 
       if (attempt === maxRetries) break
 
       const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000
+      console.log(`[v0] Retrying in ${Math.ceil(delay)}ms...`)
       await new Promise((resolve) => setTimeout(resolve, delay))
 
       // Rotate CORS proxy on failure
