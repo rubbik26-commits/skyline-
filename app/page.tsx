@@ -306,23 +306,22 @@ export default function ManhattanDashboard() {
           </CardContent>
         </Card>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          <div className="xl:col-span-2">
-            {viewMode === "table" ? (
-              <PropertyTable data={filteredData} expandedRows={expandedRows} setExpandedRows={setExpandedRows} />
-            ) : (
-              <PropertyCards data={filteredData} />
-            )}
-          </div>
-
-          <div className="space-y-6">
-            <InteractiveMap data={filteredData} />
-          </div>
+        {/* Property Table/Cards - Full Width */}
+        <div className="w-full">
+          {viewMode === "table" ? (
+            <PropertyTable data={filteredData} expandedRows={expandedRows} setExpandedRows={setExpandedRows} />
+          ) : (
+            <PropertyCards data={filteredData} />
+          )}
         </div>
 
         {/* Charts */}
         <ChartsSection data={filteredData} />
+
+        {/* Interactive Map */}
+        <div className="w-full">
+          <InteractiveMap data={filteredData} />
+        </div>
       </div>
     </div>
   )
