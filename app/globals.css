@@ -4,76 +4,76 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Updated color palette to match Skyline Properties professional blue theme */
+  /* Optimized color palette for Manhattan Dashboard integration */
   --background: oklch(1 0 0); /* #ffffff */
-  --foreground: oklch(0.2 0.02 240); /* #2c3e50 - darker professional text */
-  --card: oklch(0.99 0.005 240); /* #fafbfc - very light blue-gray */
-  --card-foreground: oklch(0.2 0.02 240); /* #2c3e50 */
+  --foreground: oklch(0.556 0.014 257.57); /* #475569 */
+  --card: oklch(0.984 0.013 220.75); /* #f0f8ff */
+  --card-foreground: oklch(0.295 0.085 220.12); /* #1770B0 */
   --popover: oklch(1 0 0); /* #ffffff */
-  --popover-foreground: oklch(0.2 0.02 240); /* #2c3e50 */
-  --primary: oklch(0.45 0.12 240); /* #4682B4 - steel blue like Skyline */
+  --popover-foreground: oklch(0.556 0.014 257.57); /* #475569 */
+  --primary: oklch(0.295 0.085 220.12); /* #1770B0 */
   --primary-foreground: oklch(1 0 0); /* #ffffff */
-  --secondary: oklch(0.55 0.08 240); /* #5B9BD5 - lighter professional blue */
+  --secondary: oklch(0.646 0.129 162.68); /* #10b981 */
   --secondary-foreground: oklch(1 0 0); /* #ffffff */
-  --muted: oklch(0.96 0.01 240); /* #f5f6f8 - very light blue-gray */
-  --muted-foreground: oklch(0.45 0.02 240); /* #6c7b7f */
-  --accent: oklch(0.45 0.12 240); /* #4682B4 - matching primary */
+  --muted: oklch(0.961 0.013 257.57); /* #f1f5f9 */
+  --muted-foreground: oklch(0.556 0.014 257.57); /* #475569 */
+  --accent: oklch(0.646 0.129 162.68); /* #10b981 */
   --accent-foreground: oklch(1 0 0); /* #ffffff */
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.92 0.01 240); /* #e8eaed - light blue-gray border */
+  --border: oklch(0.984 0.013 220.75); /* #f0f8ff */
   --input: oklch(1 0 0); /* #ffffff */
-  --ring: oklch(0.45 0.12 240 / 0.5); /* steel blue with opacity */
-  --chart-1: oklch(0.45 0.12 240); /* #4682B4 */
-  --chart-2: oklch(0.55 0.08 240); /* #5B9BD5 */
-  --chart-3: oklch(0.35 0.15 240); /* darker blue */
-  --chart-4: oklch(0.65 0.06 240); /* lighter blue */
-  --chart-5: oklch(0.25 0.08 240); /* very dark blue */
+  --ring: oklch(0.295 0.085 220.12 / 0.5); /* rgba(23, 112, 176, 0.5) */
+  --chart-1: oklch(0.295 0.085 220.12); /* #1770B0 */
+  --chart-2: oklch(0.646 0.129 162.68); /* #10b981 */
+  --chart-3: oklch(0.395 0.105 220.12); /* #2980d9 */
+  --chart-4: oklch(0.984 0.013 220.75); /* #f0f8ff */
+  --chart-5: oklch(0.556 0.014 257.57); /* #475569 */
   --radius: 0.5rem;
   --sidebar: oklch(1 0 0); /* #ffffff */
-  --sidebar-foreground: oklch(0.45 0.12 240); /* #4682B4 */
-  --sidebar-primary: oklch(0.96 0.01 240); /* #f5f6f8 */
-  --sidebar-primary-foreground: oklch(0.2 0.02 240); /* #2c3e50 */
-  --sidebar-accent: oklch(0.45 0.12 240); /* #4682B4 */
+  --sidebar-foreground: oklch(0.295 0.085 220.12); /* #1770B0 */
+  --sidebar-primary: oklch(0.961 0.013 257.57); /* #f1f5f9 */
+  --sidebar-primary-foreground: oklch(0.556 0.014 257.57); /* #475569 */
+  --sidebar-accent: oklch(0.646 0.129 162.68); /* #10b981 */
   --sidebar-accent-foreground: oklch(1 0 0); /* #ffffff */
-  --sidebar-border: oklch(0.92 0.01 240); /* #e8eaed */
-  --sidebar-ring: oklch(0.45 0.12 240 / 0.5);
+  --sidebar-border: oklch(0.984 0.013 220.75); /* #f0f8ff */
+  --sidebar-ring: oklch(0.295 0.085 220.12 / 0.5); /* rgba(23, 112, 176, 0.5) */
 }
 
 .dark {
-  /* Updated dark mode colors to maintain Skyline professional theme */
-  --background: oklch(0.08 0.01 240); /* #1a1d23 - dark blue-gray */
-  --foreground: oklch(0.95 0.01 240); /* #f0f1f3 */
-  --card: oklch(0.12 0.02 240); /* #1e2328 */
-  --card-foreground: oklch(0.95 0.01 240); /* #f0f1f3 */
-  --popover: oklch(0.12 0.02 240); /* #1e2328 */
-  --popover-foreground: oklch(0.95 0.01 240); /* #f0f1f3 */
-  --primary: oklch(0.55 0.08 240); /* #5B9BD5 - lighter blue for dark mode */
-  --primary-foreground: oklch(0.08 0.01 240); /* #1a1d23 */
-  --secondary: oklch(0.45 0.12 240); /* #4682B4 */
-  --secondary-foreground: oklch(0.08 0.01 240); /* #1a1d23 */
-  --muted: oklch(0.18 0.02 240); /* #2a2f36 */
-  --muted-foreground: oklch(0.65 0.02 240); /* #9ca3af */
-  --accent: oklch(0.55 0.08 240); /* #5B9BD5 */
-  --accent-foreground: oklch(0.08 0.01 240); /* #1a1d23 */
+  /* Dark mode optimizations for Manhattan Dashboard */
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.395 0.105 220.12); /* Lighter #1770B0 for dark mode */
+  --primary-foreground: oklch(0.145 0 0);
+  --secondary: oklch(0.646 0.129 162.68); /* #10b981 */
+  --secondary-foreground: oklch(0.145 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.646 0.129 162.68); /* #10b981 */
+  --accent-foreground: oklch(0.145 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.95 0.01 240);
-  --border: oklch(0.18 0.02 240); /* #2a2f36 */
-  --input: oklch(0.18 0.02 240); /* #2a2f36 */
-  --ring: oklch(0.55 0.08 240 / 0.5);
-  --chart-1: oklch(0.55 0.08 240);
-  --chart-2: oklch(0.45 0.12 240);
-  --chart-3: oklch(0.65 0.06 240);
-  --chart-4: oklch(0.35 0.15 240);
-  --chart-5: oklch(0.75 0.04 240);
-  --sidebar: oklch(0.12 0.02 240);
-  --sidebar-foreground: oklch(0.95 0.01 240);
-  --sidebar-primary: oklch(0.55 0.08 240);
-  --sidebar-primary-foreground: oklch(0.08 0.01 240);
-  --sidebar-accent: oklch(0.18 0.02 240);
-  --sidebar-accent-foreground: oklch(0.95 0.01 240);
-  --sidebar-border: oklch(0.18 0.02 240);
-  --sidebar-ring: oklch(0.55 0.08 240 / 0.5);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.395 0.105 220.12 / 0.5);
+  --chart-1: oklch(0.395 0.105 220.12);
+  --chart-2: oklch(0.646 0.129 162.68);
+  --chart-3: oklch(0.495 0.125 220.12);
+  --chart-4: oklch(0.708 0 0);
+  --chart-5: oklch(0.556 0.014 257.57);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.395 0.105 220.12);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.395 0.105 220.12 / 0.5);
 }
 
 @theme inline {
@@ -126,20 +126,27 @@
   }
 }
 
-/* Fixed theme() function calls and replaced with CSS custom properties */
+/* Manhattan Dashboard Specific Styles - Optimized for Performance */
 @layer components {
+  /* Dashboard gradient with hardware acceleration */
   .dashboard-gradient {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8));
+    will-change: transform;
+    transform: translateZ(0); /* Force GPU acceleration */
   }
 
+  /* Optimized stat card with contained animations */
   .stat-card {
-    @apply bg-card border border-border rounded-lg p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+    @apply bg-card border border-border rounded-lg p-6 transition-all duration-300;
+    contain: layout style paint;
   }
 
   .stat-card:hover {
+    transform: translateY(-2px);
     box-shadow: 0 10px 25px -5px hsl(var(--primary) / 0.2);
   }
 
+  /* Badge styles with optimized color mapping */
   .badge-rental {
     @apply bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300;
   }
@@ -172,9 +179,11 @@
     @apply bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300;
   }
 
+  /* Optimized shimmer effect with reduced repaints */
   .shimmer {
     position: relative;
     overflow: hidden;
+    contain: strict;
   }
 
   .shimmer::before {
@@ -186,23 +195,39 @@
     height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     animation: shimmer 2s infinite;
+    will-change: transform;
   }
 
   @keyframes shimmer {
     0% {
-      left: -100%;
+      transform: translateX(0);
     }
     100% {
-      left: 100%;
+      transform: translateX(200%);
     }
   }
 
+  /* Pulse dot with contained animation */
   .pulse-dot {
-    @apply w-2 h-2 bg-green-500 rounded-full animate-pulse;
+    @apply w-2 h-2 bg-green-500 rounded-full;
+    animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    contain: layout style paint;
   }
 
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  /* Notification system with optimal positioning */
   .notification {
     @apply fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg text-white font-medium max-w-sm;
+    contain: layout style;
   }
 
   .notification-success {
@@ -219,5 +244,131 @@
 
   .notification-warning {
     @apply bg-yellow-500;
+  }
+
+  /* Manhattan Dashboard specific table optimizations */
+  .manhattan-table {
+    contain: layout style;
+  }
+
+  .manhattan-table tbody tr:hover {
+    @apply bg-muted/50;
+    transition: background-color 0.15s ease-in-out;
+  }
+
+  /* Chart container optimizations */
+  .manhattan-chart-container {
+    contain: layout;
+    will-change: transform;
+  }
+
+  /* Map container with proper containment */
+  .manhattan-map-container {
+    contain: size layout style;
+    min-height: 400px;
+  }
+
+  /* Performance optimized scrollable areas */
+  .manhattan-scrollable {
+    contain: layout style;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+
+  .manhattan-scrollable::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .manhattan-scrollable::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .manhattan-scrollable::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  .manhattan-scrollable::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+}
+
+/* Critical path CSS for Manhattan Dashboard - Inlined for performance */
+@layer utilities {
+  .manhattan-fade-in {
+    animation: manhattan-fade-in 0.3s ease-in-out;
+  }
+
+  @keyframes manhattan-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .manhattan-slide-up {
+    animation: manhattan-slide-up 0.4s ease-out;
+  }
+
+  @keyframes manhattan-slide-up {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Utility for text truncation in property tables */
+  .manhattan-truncate {
+    @apply truncate max-w-xs;
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .dashboard-gradient {
+      background: hsl(var(--primary));
+    }
+
+    .stat-card:hover {
+      border-width: 2px;
+      transform: none;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .shimmer::before,
+    .pulse-dot,
+    .manhattan-fade-in,
+    .manhattan-slide-up {
+      animation: none;
+    }
+
+    .stat-card:hover {
+      transform: none;
+    }
+  }
+
+  /* Print optimizations */
+  @media print {
+    .dashboard-gradient {
+      background: white !important;
+      color: black !important;
+    }
+
+    .shimmer::before {
+      display: none;
+    }
+
+    .notification {
+      display: none;
+    }
   }
 }

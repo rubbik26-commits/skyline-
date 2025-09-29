@@ -1,0 +1,1805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manhattan Office-to-Residential Conversions Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1770B0;
+            --primary-light: #2980d9;
+            --secondary: #10b981;
+            --background: #ffffff;
+            --foreground: #475569;
+            --card: #f0f8ff;
+            --border: #e2e8f0;
+            --muted: #f1f5f9;
+            --accent: #10b981;
+        }
+
+        .dark {
+            --primary: #2980d9;
+            --primary-light: #3498db;
+            --secondary: #10b981;
+            --background: #0f172a;
+            --foreground: #f8fafc;
+            --card: #1e293b;
+            --border: #334155;
+            --muted: #475569;
+            --accent: #10b981;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--foreground);
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-gradient {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        }
+
+        .card {
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(23, 112, 176, 0.2);
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-light);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--foreground);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--muted);
+        }
+
+        .input {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.375rem;
+            background-color: var(--background);
+            color: var(--foreground);
+            width: 100%;
+        }
+
+        .select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.375rem;
+            background-color: var(--background);
+            color: var(--foreground);
+            width: 100%;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--card);
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table th {
+            background-color: var(--muted);
+            font-weight: 600;
+        }
+
+        .table tr:hover {
+            background-color: var(--muted);
+        }
+
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-rental { background-color: #dbeafe; color: #1e40af; }
+        .badge-condo { background-color: #fed7aa; color: #c2410c; }
+        .badge-completed { background-color: #dcfce7; color: #166534; }
+        .badge-underway { background-color: #fef3c7; color: #92400e; }
+        .badge-projected { background-color: #dbeafe; color: #1e40af; }
+        .badge-planned { background-color: #e9d5ff; color: #7c3aed; }
+        .badge-converted { background-color: #dcfce7; color: #166534; }
+        .badge-potential { background-color: #fef3c7; color: #92400e; }
+
+        .dark .badge-rental { background-color: #1e3a8a; color: #93c5fd; }
+        .dark .badge-condo { background-color: #9a3412; color: #fed7aa; }
+        .dark .badge-completed { background-color: #166534; color: #86efac; }
+        .dark .badge-underway { background-color: #92400e; color: #fcd34d; }
+        .dark .badge-projected { background-color: #1e3a8a; color: #93c5fd; }
+        .dark .badge-planned { background-color: #6b21a8; color: #c4b5fd; }
+        .dark .badge-converted { background-color: #166534; color: #86efac; }
+        .dark .badge-potential { background-color: #92400e; color: #fcd34d; }
+
+        .shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shimmer::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .notification {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            color: white;
+            font-weight: 500;
+            max-width: 20rem;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification-success { background-color: #10b981; }
+        .notification-error { background-color: #ef4444; }
+        .notification-info { background-color: #3b82f6; }
+        .notification-warning { background-color: #f59e0b; }
+
+        .grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+        @media (min-width: 768px) {
+            .md\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .md\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+
+        @media (min-width: 1024px) {
+            .lg\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .lg\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
+
+        @media (min-width: 1280px) {
+            .xl\\:grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+        }
+
+        .hidden { display: none; }
+        .block { display: block; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-4 { gap: 1rem; }
+        .gap-6 { gap: 1.5rem; }
+        .gap-8 { gap: 2rem; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .p-8 { padding: 2rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .text-sm { font-size: 0.875rem; }
+        .text-lg { font-size: 1.125rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .text-3xl { font-size: 1.875rem; }
+        .text-4xl { font-size: 2.25rem; }
+        .font-bold { font-weight: 700; }
+        .font-semibold { font-weight: 600; }
+        .text-white { color: white; }
+        .opacity-90 { opacity: 0.9; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .max-w-7xl { max-width: 80rem; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .space-y-2 > * + * { margin-top: 0.5rem; }
+        .space-y-4 > * + * { margin-top: 1rem; }
+        .space-y-6 > * + * { margin-top: 1.5rem; }
+        .space-y-8 > * + * { margin-top: 2rem; }
+        .w-full { width: 100%; }
+        .h-64 { height: 16rem; }
+        .min-h-screen { min-height: 100vh; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .top-0 { top: 0; }
+        .left-0 { left: 0; }
+        .right-0 { right: 0; }
+        .z-10 { z-index: 10; }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen">
+        <!-- Header -->
+        <div class="dashboard-gradient text-white p-8 mb-8 shimmer">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                    <div>
+                        <h1 class="text-4xl font-bold mb-2">Manhattan Office-to-Residential Conversions</h1>
+                        <p class="text-lg opacity-90">
+                            Comprehensive real-time tracking with AI-powered insights and live market data
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-sun"></i>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="darkModeToggle" class="sr-only">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                            </label>
+                            <i class="fas fa-moon"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 space-y-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-semibold opacity-75">Total Properties</p>
+                            <p class="text-3xl font-bold" id="totalProperties">0</p>
+                        </div>
+                        <div class="text-2xl opacity-75">
+                            <i class="fas fa-building"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-semibold opacity-75">Total Units</p>
+                            <p class="text-3xl font-bold" id="totalUnits">0</p>
+                        </div>
+                        <div class="text-2xl opacity-75">
+                            <i class="fas fa-home"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-semibold opacity-75">Completed</p>
+                            <p class="text-3xl font-bold" id="completedCount">0</p>
+                        </div>
+                        <div class="text-2xl opacity-75">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-semibold opacity-75">Underway</p>
+                            <p class="text-3xl font-bold" id="underwayCount">0</p>
+                        </div>
+                        <div class="text-2xl opacity-75">
+                            <i class="fas fa-hammer"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Management -->
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-chart-bar"></i>
+                    Data Management
+                </h3>
+                <div class="flex flex-wrap gap-4">
+                    <button class="btn btn-primary" onclick="refreshData()">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Refresh Data
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportCSV()">
+                        <i class="fas fa-download mr-2"></i>
+                        Export CSV
+                    </button>
+                    <div class="flex items-center gap-2 ml-auto">
+                        <label>View:</label>
+                        <select class="select" id="viewMode" onchange="toggleView()">
+                            <option value="table">Table</option>
+                            <option value="cards">Cards</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-filter"></i>
+                    Filters
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Search Properties</label>
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 opacity-50"></i>
+                            <input type="text" class="input pl-10" placeholder="Search addresses, notes..." id="searchInput" oninput="applyFilters()">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Submarket</label>
+                        <select class="select" id="submarketFilter" onchange="applyFilters()">
+                            <option value="all">All Submarkets</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Type</label>
+                        <select class="select" id="typeFilter" onchange="applyFilters()">
+                            <option value="all">All Types</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Status</label>
+                        <select class="select" id="statusFilter" onchange="applyFilters()">
+                            <option value="all">All Statuses</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Min Units</label>
+                        <input type="number" class="input" placeholder="0" id="minUnits" oninput="applyFilters()">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">Max Units</label>
+                        <input type="number" class="input" placeholder="No limit" id="maxUnits" oninput="applyFilters()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                <div class="xl:col-span-2">
+                    <!-- Table View -->
+                    <div id="tableView" class="card">
+                        <div class="overflow-x-auto">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Address</th>
+                                        <th>Submarket</th>
+                                        <th>Units</th>
+                                        <th>GSF</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Cards View -->
+                    <div id="cardsView" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="cardsContainer">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Map -->
+                    <div class="card">
+                        <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Interactive Map
+                        </h3>
+                        <div id="map" class="h-64 rounded-lg"></div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="card">
+                        <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                            <i class="fas fa-chart-pie"></i>
+                            Status Distribution
+                        </h3>
+                        <canvas id="statusChart" width="400" height="200"></canvas>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                            <i class="fas fa-chart-bar"></i>
+                            Units by Submarket
+                        </h3>
+                        <canvas id="submarketChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script>
+        // Property data
+        const propertyData = [
+            {
+                address: "101 W 125th St",
+                submarket: "Harlem",
+                units: 110,
+                gsf: 140000,
+                type: "Rental",
+                status: "Projected",
+                notes: "Press mention.",
+                eligible: true,
+                pressLink: "https://www.connectcre.com/stories/jeff-sutton-to-convert-harlem-office-building-to-housing/",
+                lat: 40.8075,
+                lng: -73.9454,
+            },
+            {
+                address: "70 Pine St",
+                submarket: "Financial District",
+                units: null,
+                gsf: null,
+                type: "Mixed",
+                status: "Converted (historical)",
+                notes: "Historic precedent.",
+                eligible: false,
+                pressLink: "",
+                lat: 40.7065,
+                lng: -74.0088,
+            },
+            {
+                address: "20 Broad St",
+                submarket: "Financial District",
+                units: null,
+                gsf: null,
+                type: "Converted historically",
+                status: "Converted",
+                notes: "Historic precedent.",
+                eligible: false,
+                pressLink: "",
+                lat: 40.7049,
+                lng: -74.0113,
+            },
+            {
+                address: "25 Broad St (The Exchange)",
+                submarket: "Financial District",
+                units: 346,
+                gsf: 375000,
+                type: "Converted historically",
+                status: "Converted",
+                notes: "Historic conversion / press.",
+                eligible: false,
+                pressLink: "",
+                lat: 40.705,
+                lng: -74.0113,
+            },
+            {
+                address: "63 Wall St",
+                submarket: "Financial District",
+                units: null,
+                gsf: null,
+                type: "Converted historically",
+                status: "Converted",
+                notes: "Historic conversion reference.",
+                eligible: false,
+                pressLink: "",
+                lat: 40.7062,
+                lng: -74.01,
+            },
+            {
+                address: "67 Wall St",
+                submarket: "Financial District",
+                units: null,
+                gsf: null,
+                type: "Converted historically",
+                status: "Converted",
+                notes: "Historic conversion reference.",
+                eligible: false,
+                pressLink: "",
+                lat: 40.7063,
+                lng: -74.0099,
+            },
+            {
+                address: "95 Wall St",
+                submarket: "Financial District",
+                units: null,
+                gsf: null,
+                type: "Converted historically",
+                status: "Converted",
+                notes: "Historic conversion reference.",
+                eligible: false,
+                pressLink: "",
+                lat: 40.7048,
+                lng: -74.0088,
+            },
+            {
+                address: "71 Broadway",
+                submarket: "Financial District",
+                units: 237,
+                gsf: 237000,
+                type: "Converted historically",
+                status: "Converted",
+                notes: "Historic conversion / press.",
+                eligible: false,
+                pressLink: "",
+                lat: 40.7079,
+                lng: -74.013,
+            },
+            {
+                address: "45 John St",
+                submarket: "Financial District",
+                units: 84,
+                gsf: 90000,
+                type: "Converted historically",
+                status: "Converted",
+                notes: "Conversion record.",
+                eligible: false,
+                pressLink: "",
+                lat: 40.7075,
+                lng: -74.0081,
+            },
+            {
+                address: "116 John St",
+                submarket: "Financial District",
+                units: 418,
+                gsf: 350000,
+                type: "Converted historically",
+                status: "Converted",
+                notes: "Conversion record.",
+                eligible: false,
+                pressLink: "",
+                lat: 40.7078,
+                lng: -74.0071,
+            },
+            {
+                address: "20 Exchange Pl",
+                submarket: "Financial District",
+                units: 767,
+                gsf: 650000,
+                type: "Converted historically",
+                status: "Converted",
+                notes: "Conversion record.",
+                eligible: false,
+                pressLink: "",
+                lat: 40.7055,
+                lng: -74.0106,
+            },
+            {
+                address: "70 W 45th St",
+                submarket: "Midtown",
+                units: 200,
+                gsf: 150000,
+                type: "Converted historically",
+                status: "Converted",
+                notes: "Historic conversion / press.",
+                eligible: false,
+                pressLink: "",
+                lat: 40.757,
+                lng: -73.9823,
+            },
+            {
+                address: "2 Wall St.",
+                submarket: "Financial District",
+                units: 121,
+                gsf: 109876,
+                type: "Rental",
+                status: "Underway",
+                notes: "Comptroller Table A1 — U, Par, S, E.",
+                eligible: true,
+                pressLink: "https://traded.co/deals/new-york/office/loan/2-wall-street-2/",
+                lat: 40.7074,
+                lng: -74.0113,
+            },
+            {
+                address: "17 Battery Pl.",
+                submarket: "Financial District",
+                units: 184,
+                gsf: 118932,
+                type: "Rental",
+                status: "Completed",
+                notes: "Comptroller Table A1 — C, Par.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/11/uruguayan-firm-alvarez-delfino-buys-17-battery-place-for-45m/",
+                lat: 40.7033,
+                lng: -74.017,
+            },
+            {
+                address: "25 Water St.",
+                submarket: "Financial District",
+                units: 1320,
+                gsf: 1044351,
+                type: "Rental",
+                status: "Underway",
+                notes: "Largest conversion; press reported.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/10/25-water-st-office-to-resi-conversion/",
+                lat: 40.7029,
+                lng: -74.0106,
+            },
+            {
+                address: "55 Broad St.",
+                submarket: "Financial District",
+                units: 571,
+                gsf: 406025,
+                type: "Rental",
+                status: "Completed",
+                notes: "Revitalization project.",
+                eligible: true,
+                pressLink: "https://bisnow.com/new-york/news/capital-markets/the-office-to-resi-conversion-trend-lands-at-55-broad-street-114421",
+                lat: 40.7056,
+                lng: -74.0118,
+            },
+            {
+                address: "61 Broadway",
+                submarket: "Financial District",
+                units: 756,
+                gsf: 650740,
+                type: "Rental",
+                status: "Projected",
+                notes: "Comptroller eligible.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2024/09/office-to-residential-conversion-61-broadway/",
+                lat: 40.7077,
+                lng: -74.0131,
+            },
+            {
+                address: "77 Water St.",
+                submarket: "Financial District",
+                units: 600,
+                gsf: 541568,
+                type: "Rental",
+                status: "Projected",
+                notes: "Comptroller eligible.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2024/09/77-water-street-jpmorgan-conversion/",
+                lat: 40.7034,
+                lng: -74.0099,
+            },
+            {
+                address: "85 Broad St.",
+                submarket: "Financial District",
+                units: 1171,
+                gsf: 1007569,
+                type: "Rental",
+                status: "Projected",
+                notes: "Comptroller eligible.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2024/09/office-to-residential-conversion-85-broad-street/",
+                lat: 40.7064,
+                lng: -74.0115,
+            },
+            {
+                address: "90 John St.",
+                submarket: "Financial District",
+                units: 114,
+                gsf: 130550,
+                type: "Rental",
+                status: "Completed",
+                notes: "Converted.",
+                eligible: true,
+                pressLink: "https://90john.com/",
+                lat: 40.7075,
+                lng: -74.0078,
+            },
+            {
+                address: "100 Wall St.",
+                submarket: "Financial District",
+                units: 539,
+                gsf: 463664,
+                type: "Rental",
+                status: "Projected",
+                notes: "Potential conversion reported.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-100-wall-st-conversion-2/",
+                lat: 40.7051,
+                lng: -74.0089,
+            },
+            {
+                address: "101 Greenwich St.",
+                submarket: "Tribeca",
+                units: 465,
+                gsf: 400294,
+                type: "Rental",
+                status: "Projected",
+                notes: "Comptroller item.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-101-greenwich-st-conversion/",
+                lat: 40.7096,
+                lng: -74.0139,
+            },
+            {
+                address: "110 Maiden Ln (80 Pine St)",
+                submarket: "Financial District",
+                units: 500,
+                gsf: 665975,
+                type: "Rental",
+                status: "Underway",
+                notes: "Conversion plans active.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-110-maiden-lane-conversion/",
+                lat: 40.7067,
+                lng: -74.0089,
+            },
+            {
+                address: "110 W 32nd St.",
+                submarket: "Midtown South",
+                units: 77,
+                gsf: 58230,
+                type: "Rental",
+                status: "Projected",
+                notes: "Comptroller item.",
+                eligible: true,
+                pressLink: "https://connectcre.com/stories/midtown-south-office-building-in-line-for-conversion/",
+                lat: 40.7484,
+                lng: -73.9878,
+            },
+            {
+                address: "111 Wall St.",
+                submarket: "Financial District",
+                units: 1570,
+                gsf: 990250,
+                type: "Rental",
+                status: "Projected",
+                notes: "Comptroller; press mentions ~1,300-1,600 units.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-111-wall-st-conversion/",
+                lat: 40.7049,
+                lng: -74.0089,
+            },
+            {
+                address: "160 Water St.",
+                submarket: "Financial District",
+                units: 588,
+                gsf: 525000,
+                type: "Rental",
+                status: "Completed",
+                notes: "Conversion complete.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/10/160-water-st-office-to-resi-conversion/",
+                lat: 40.7032,
+                lng: -74.0106,
+            },
+            {
+                address: "219-229 E 42nd St (ex-Pfizer HQ)",
+                submarket: "Midtown East",
+                units: 1600,
+                gsf: 972462,
+                type: "Rental",
+                status: "Underway",
+                notes: "Major project; press reported.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2024/09/219-229-e-42nd-st-pfizer-conversion/",
+                lat: 40.7505,
+                lng: -73.9731,
+            },
+            {
+                address: "222 Broadway",
+                submarket: "Financial District",
+                units: 798,
+                gsf: 756138,
+                type: "Rental",
+                status: "Projected",
+                notes: "Comptroller listed.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/11/office-to-residential-conversion-222-broadway/",
+                lat: 40.7121,
+                lng: -74.0077,
+            },
+            {
+                address: "230 Park Ave (Helmsley)",
+                submarket: "Midtown",
+                units: null,
+                gsf: null,
+                type: "Rental",
+                status: "Projected",
+                notes: "Partial conversion explored (press).",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/11/helmsley-building-conversion/",
+                lat: 40.7516,
+                lng: -73.9784,
+            },
+            {
+                address: "330 W 42nd St.",
+                submarket: "Hell's Kitchen",
+                units: 224,
+                gsf: 192762,
+                type: "Rental",
+                status: "Projected",
+                notes: "Comptroller item.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/10/330-w-42nd-st-office-to-resi-conversion/",
+                lat: 40.759,
+                lng: -73.9934,
+            },
+            {
+                address: "345 7th Ave",
+                submarket: "NoMad",
+                units: 221,
+                gsf: 190325,
+                type: "Rental",
+                status: "Projected",
+                notes: "Comptroller item.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/10/345-seventh-avenue-office-conversion/",
+                lat: 40.7478,
+                lng: -73.9916,
+            },
+            {
+                address: "355 Lexington Ave",
+                submarket: "Midtown East",
+                units: 261,
+                gsf: 225000,
+                type: "Rental",
+                status: "Projected",
+                notes: "Comptroller item.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-355-lexington-ave-conversion/",
+                lat: 40.7508,
+                lng: -73.9768,
+            },
+            {
+                address: "592 7th Ave (5 Times Square)",
+                submarket: "Times Square",
+                units: 1250,
+                gsf: 716869,
+                type: "Rental",
+                status: "Underway",
+                notes: "Large conversion reported in press.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-5-times-square-conversion/",
+                lat: 40.7549,
+                lng: -73.9871,
+            },
+            {
+                address: "650 1st Ave",
+                submarket: "Murray Hill",
+                units: 111,
+                gsf: 112262,
+                type: "Rental",
+                status: "Underway",
+                notes: "Comptroller item.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-650-1st-ave-conversion/",
+                lat: 40.7473,
+                lng: -73.9696,
+            },
+            {
+                address: "675 3rd Ave",
+                submarket: "Midtown East",
+                units: 336,
+                gsf: 289356,
+                type: "Rental",
+                status: "Projected",
+                notes: "Comptroller item.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/11/metro-loft-to-convert-675-third-avenue-to-residential/",
+                lat: 40.7528,
+                lng: -73.971,
+            },
+            {
+                address: "750 3rd Ave",
+                submarket: "Midtown East",
+                units: 639,
+                gsf: 761384,
+                type: "Rental",
+                status: "Underway",
+                notes: "SL Green / press reporting.",
+                eligible: true,
+                pressLink: "https://slgreen.com/properties/750-third-avenue/",
+                lat: 40.7527,
+                lng: -73.9707,
+            },
+            {
+                address: "767 3rd Ave",
+                submarket: "Midtown East",
+                units: 333,
+                gsf: 286212,
+                type: "Rental",
+                status: "Projected",
+                notes: "Comptroller item.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2025/08/metro-loft-quantum-pacific-767-third-avenue-conversion/",
+                lat: 40.7553,
+                lng: -73.9704,
+            },
+            {
+                address: "830 3rd Ave",
+                submarket: "Midtown East",
+                units: 188,
+                gsf: 150638,
+                type: "Rental",
+                status: "Underway",
+                notes: "Comptroller item.",
+                eligible: true,
+                pressLink: "https://connectcre.com/stories/midtown-office-building-slated-for-conversion-to-residential/",
+                lat: 40.7577,
+                lng: -73.9703,
+            },
+            {
+                address: "845 3rd Ave",
+                submarket: "Midtown East",
+                units: 374,
+                gsf: 321452,
+                type: "Rental",
+                status: "Projected",
+                notes: "Comptroller item.",
+                eligible: true,
+                pressLink: "https://connectcre.com/stories/midtown-office-building-slated-for-resi-conversion/",
+                lat: 40.7585,
+                lng: -73.9702,
+            },
+            {
+                address: "980 6th Ave",
+                submarket: "Midtown South",
+                units: 100,
+                gsf: 90000,
+                type: "Rental",
+                status: "Underway",
+                notes: "Comptroller item.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-980-6th-ave-conversion/",
+                lat: 40.752,
+                lng: -73.9854,
+            },
+            {
+                address: "1011 1st Ave",
+                submarket: "Midtown East",
+                units: 420,
+                gsf: 398214,
+                type: "Rental",
+                status: "Underway",
+                notes: "Ex-Catholic Archdiocese HQ; press reported.",
+                eligible: true,
+                pressLink: "https://www.businesswire.com/news/home/20250710445708/en/Vanbarton-Group-Closes-on-1011-First-Avenue-with-%24250-Million-Loan-from-Eldridge",
+                lat: 40.7582,
+                lng: -73.9674,
+            },
+            {
+                address: "1730 Broadway",
+                submarket: "Midtown West",
+                units: 422,
+                gsf: null,
+                type: "Rental",
+                status: "Filed / Planned",
+                notes: "Yellowstone filings reported.",
+                eligible: true,
+                pressLink: "https://www.pincusco.com/yellowstone-files-to-convert-office-to-more-than-400-apartments-in-midtown-west/",
+                lat: 40.7629,
+                lng: -73.9841,
+            },
+            {
+                address: "1740 Broadway",
+                submarket: "Midtown",
+                units: 422,
+                gsf: 510591,
+                type: "Rental",
+                status: "Projected",
+                notes: "Yellowstone filing reported.",
+                eligible: true,
+                pressLink: "https://www.pincusco.com/yellowstone-files-to-convert-office-to-more-than-400-apartments-in-midtown-west/",
+                lat: 40.7635,
+                lng: -73.9839,
+            },
+            {
+                address: "79 Madison Ave",
+                submarket: "Gramercy",
+                units: 118,
+                gsf: 224718,
+                type: "Rental",
+                status: "Underway",
+                notes: "Press reported.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/10/79-madison-avenue-office-to-resi-conversion/",
+                lat: 40.7413,
+                lng: -73.9876,
+            },
+            {
+                address: "95 Madison Ave",
+                submarket: "NoMad",
+                units: 65,
+                gsf: 146161,
+                type: "Condo Conversion",
+                status: "Underway",
+                notes: "Press reported.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-95-madison-ave-conversion/",
+                lat: 40.7421,
+                lng: -73.9872,
+            },
+            {
+                address: "101 Franklin St",
+                submarket: "Tribeca",
+                units: 106,
+                gsf: 202000,
+                type: "Condo Conversion",
+                status: "Underway",
+                notes: "Press reported.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/10/101-franklin-st-office-to-condo-conversion/",
+                lat: 40.7184,
+                lng: -74.0051,
+            },
+            {
+                address: "114 E 25th St",
+                submarket: "Flatiron",
+                units: 20,
+                gsf: 48236,
+                type: "Condo Conversion",
+                status: "Underway",
+                notes: "Press noted.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-114-e-25th-st-conversion/",
+                lat: 40.7403,
+                lng: -73.9857,
+            },
+            {
+                address: "115 7th Ave",
+                submarket: "Chelsea",
+                units: 50,
+                gsf: 42380,
+                type: "Condo Conversion",
+                status: "Underway",
+                notes: "Permits reported.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/10/115-seventh-avenue-office-conversion/",
+                lat: 40.7411,
+                lng: -73.9952,
+            },
+            {
+                address: "140 W 57th St",
+                submarket: "Midtown",
+                units: 47,
+                gsf: 90000,
+                type: "Condo Conversion",
+                status: "Underway",
+                notes: "Press noted.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-140-w-57th-st-conversion/",
+                lat: 40.7652,
+                lng: -73.9778,
+            },
+            {
+                address: "175 5th Ave",
+                submarket: "Flatiron",
+                units: 60,
+                gsf: 183449,
+                type: "Condo Conversion",
+                status: "Underway",
+                notes: "Press noted.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-175-5th-ave-conversion/",
+                lat: 40.7402,
+                lng: -73.9904,
+            },
+            {
+                address: "245 W 55th St",
+                submarket: "Midtown",
+                units: 42,
+                gsf: 63450,
+                type: "Condo Conversion",
+                status: "Underway",
+                notes: "Press noted.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-245-w-55th-st-conversion/",
+                lat: 40.7634,
+                lng: -73.9813,
+            },
+            {
+                address: "419 Park Ave S",
+                submarket: "Midtown South",
+                units: 100,
+                gsf: 160114,
+                type: "Condo Conversion",
+                status: "Underway",
+                notes: "Press noted.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/10/419-park-avenue-south-office-to-resi-conversion/",
+                lat: 40.7451,
+                lng: -73.9827,
+            },
+            {
+                address: "609 5th Ave",
+                submarket: "Midtown East",
+                units: 66,
+                gsf: 121745,
+                type: "Condo Conversion",
+                status: "Underway",
+                notes: "Press noted.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/10/609-fifth-avenue-office-to-condo-conversion/",
+                lat: 40.7579,
+                lng: -73.9775,
+            },
+            {
+                address: "623 5th Ave",
+                submarket: "Midtown East",
+                units: 172,
+                gsf: 344300,
+                type: "Condo Conversion",
+                status: "Underway",
+                notes: "Press noted.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/10/623-fifth-avenue-office-to-condo-conversion/",
+                lat: 40.7586,
+                lng: -73.9772,
+            },
+            {
+                address: "135 E 57th St (Tower 57)",
+                submarket: "Midtown / Billionaires' Row",
+                units: 350,
+                gsf: null,
+                type: "Rental",
+                status: "Planned",
+                notes: "Press: TF Cornerstone reported.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-135-e-57th-st-conversion/",
+                lat: 40.7623,
+                lng: -73.9722,
+            },
+            {
+                address: "6 E 43rd St (Emigrant Savings Bank)",
+                submarket: "Midtown East",
+                units: 450,
+                gsf: 400000,
+                type: "Rental",
+                status: "Planned",
+                notes: "Vanbarton acquisition / press.",
+                eligible: true,
+                pressLink: "https://www.connectcre.com/stories/vanbarton-groups-office-to-resi-conversion-in-midtown-east/",
+                lat: 40.7531,
+                lng: -73.9773,
+            },
+            {
+                address: "67 Irving Pl",
+                submarket: "Gramercy",
+                units: 11,
+                gsf: null,
+                type: "Rental",
+                status: "Planned",
+                notes: "DOB filing / press.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/10/67-irving-place-office-conversion/",
+                lat: 40.7359,
+                lng: -73.9869,
+            },
+            {
+                address: "44 Wall St",
+                submarket: "Financial District",
+                units: 350,
+                gsf: 200000,
+                type: "Rental",
+                status: "Underway",
+                notes: "Press-reported filings.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/10/44-wall-st-office-to-resi-conversion/",
+                lat: 40.7066,
+                lng: -74.0108,
+            },
+            {
+                address: "101 Park Ave",
+                submarket: "Midtown",
+                units: 250,
+                gsf: 300000,
+                type: "Rental",
+                status: "Underway",
+                notes: "Press mentions.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/10/101-park-avenue-office-conversion/",
+                lat: 40.7515,
+                lng: -73.9785,
+            },
+            {
+                address: "321 W 44th St",
+                submarket: "Midtown",
+                units: 228,
+                gsf: 141386,
+                type: "Rental",
+                status: "Underway",
+                notes: "Press reported.",
+                eligible: true,
+                pressLink: "https://commercialobserver.com/2023/10/321-w-44th-st-office-to-resi-conversion/",
+                lat: 40.7592,
+                lng: -73.99,
+            },
+            {
+                address: "312 W 37th St",
+                submarket: "Midtown South",
+                units: 124,
+                gsf: 103138,
+                type: "Rental",
+                status: "Underway",
+                notes: "TRD reported.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/07/26/midtown-office-conversion/",
+                lat: 40.7534,
+                lng: -73.9906,
+            },
+            {
+                address: "325 W 33rd St",
+                submarket: "Midtown South",
+                units: 142,
+                gsf: 109355,
+                type: "Rental",
+                status: "Underway",
+                notes: "TRD reported.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/11/20/midtown-west-office-conversion/",
+                lat: 40.7509,
+                lng: -73.9932,
+            },
+            {
+                address: "350 Hudson St",
+                submarket: "Hudson Sq.",
+                units: 398,
+                gsf: 591931,
+                type: "Rental",
+                status: "Underway",
+                notes: "Hudson Square cluster reporting.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/08/11/hudson-square-office-conversion/",
+                lat: 40.7271,
+                lng: -74.0061,
+            },
+            {
+                address: "441 9th Ave",
+                submarket: "Midtown",
+                units: 391,
+                gsf: 330200,
+                type: "Rental",
+                status: "Underway",
+                notes: "Press reported.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-441-9th-ave-conversion/",
+                lat: 40.7569,
+                lng: -73.9922,
+            },
+            {
+                address: "444 Park Ave S",
+                submarket: "Midtown South",
+                units: 121,
+                gsf: 114389,
+                type: "Rental",
+                status: "Underway",
+                notes: "Permits reported.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/10/06/the-road-to-444-park-ave-s-conversion/",
+                lat: 40.7463,
+                lng: -73.9825,
+            },
+            {
+                address: "234 E 23rd St",
+                submarket: "Gramercy",
+                units: 54,
+                gsf: 49000,
+                type: "Rental",
+                status: "Projected",
+                notes: "TRD reported.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2024/04/18/midtown-south-office-to-resi-conversion/",
+                lat: 40.7381,
+                lng: -73.9837,
+            },
+            {
+                address: "1075 6th Ave",
+                submarket: "Midtown",
+                units: 220,
+                gsf: 137000,
+                type: "Rental",
+                status: "Underway",
+                notes: "TRD reported.",
+                eligible: true,
+                pressLink: "https://therealdeal.com/new-york/2023/11/08/midtown-office-to-residential-conversion/",
+                lat: 40.7597,
+                lng: -73.9832,
+            },
+            {
+                address: "1107 Broadway",
+                submarket: "Flatiron",
+                units: 15,
+                gsf: 48750,
+                type: "Rental",
+                status: "Projected",
+                notes: "Local coverage.",
+                eligible: true,
+                pressLink: "https://www.10madisonwest.com/",
+                lat: 40.743,
+                lng: -73.9895,
+            }
+        ];
+
+        let filteredData = [...propertyData];
+        let map;
+        let statusChart;
+        let submarketChart;
+
+        // Initialize the dashboard
+        function initDashboard() {
+            populateFilters();
+            updateStats();
+            renderTable();
+            initMap();
+            initCharts();
+            setupEventListeners();
+        }
+
+        // Populate filter dropdowns
+        function populateFilters() {
+            const submarkets = [...new Set(propertyData.map(p => p.submarket).filter(Boolean))].sort();
+            const types = [...new Set(propertyData.map(p => p.type).filter(Boolean))].sort();
+            const statuses = [...new Set(propertyData.map(p => p.status).filter(Boolean))].sort();
+
+            populateSelect('submarketFilter', submarkets);
+            populateSelect('typeFilter', types);
+            populateSelect('statusFilter', statuses);
+        }
+
+        function populateSelect(id, options) {
+            const select = document.getElementById(id);
+            options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.textContent = option;
+                select.appendChild(optionElement);
+            });
+        }
+
+        // Update statistics
+        function updateStats() {
+            const totalProperties = filteredData.length;
+            const totalUnits = filteredData.reduce((sum, prop) => sum + (prop.units || 0), 0);
+            const completedCount = filteredData.filter(prop => prop.status === 'Completed').length;
+            const underwayCount = filteredData.filter(prop => prop.status === 'Underway').length;
+
+            document.getElementById('totalProperties').textContent = totalProperties.toLocaleString();
+            document.getElementById('totalUnits').textContent = totalUnits.toLocaleString();
+            document.getElementById('completedCount').textContent = completedCount.toLocaleString();
+            document.getElementById('underwayCount').textContent = underwayCount.toLocaleString();
+        }
+
+        // Render table
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            filteredData.forEach(property => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${property.address}</td>
+                    <td>${property.submarket || 'N/A'}</td>
+                    <td>${property.units ? property.units.toLocaleString() : 'N/A'}</td>
+                    <td>${property.gsf ? property.gsf.toLocaleString() : 'N/A'}</td>
+                    <td><span class="badge ${getBadgeClass(property.type)}">${property.type || 'N/A'}</span></td>
+                    <td><span class="badge ${getBadgeClass(property.status)}">${property.status || 'N/A'}</span></td>
+                    <td>
+                        ${property.pressLink ? `<a href="${property.pressLink}" target="_blank" class="text-blue-600 hover:text-blue-800"><i class="fas fa-external-link-alt"></i></a>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Render cards
+        function renderCards() {
+            const container = document.getElementById('cardsContainer');
+            container.innerHTML = '';
+
+            filteredData.forEach(property => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-semibold text-lg">${property.address}</h4>
+                        ${property.pressLink ? `<a href="${property.pressLink}" target="_blank" class="text-blue-600 hover:text-blue-800"><i class="fas fa-external-link-alt"></i></a>` : ''}
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm opacity-75">Submarket:</span>
+                            <span class="text-sm">${property.submarket || 'N/A'}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm opacity-75">Units:</span>
+                            <span class="text-sm">${property.units ? property.units.toLocaleString() : 'N/A'}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm opacity-75">GSF:</span>
+                            <span class="text-sm">${property.gsf ? property.gsf.toLocaleString() : 'N/A'}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm opacity-75">Type:</span>
+                            <span class="badge ${getBadgeClass(property.type)}">${property.type || 'N/A'}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm opacity-75">Status:</span>
+                            <span class="badge ${getBadgeClass(property.status)}">${property.status || 'N/A'}</span>
+                        </div>
+                        ${property.notes ? `<div class="mt-3 p-2 bg-gray-50 dark:bg-gray-800 rounded text-sm">${property.notes}</div>` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Get badge class based on type/status
+        function getBadgeClass(value) {
+            if (!value) return '';
+            
+            const lowerValue = value.toLowerCase();
+            
+            if (lowerValue.includes('rental')) return 'badge-rental';
+            if (lowerValue.includes('condo')) return 'badge-condo';
+            if (lowerValue.includes('completed')) return 'badge-completed';
+            if (lowerValue.includes('underway')) return 'badge-underway';
+            if (lowerValue.includes('projected')) return 'badge-projected';
+            if (lowerValue.includes('planned')) return 'badge-planned';
+            if (lowerValue.includes('converted')) return 'badge-converted';
+            if (lowerValue.includes('potential')) return 'badge-potential';
+            
+            return '';
+        }
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([40.7589, -73.9851], 12);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            updateMapMarkers();
+        }
+
+        // Update map markers
+        function updateMapMarkers() {
+            if (!map) return;
+
+            // Clear existing markers
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            // Add markers for filtered data
+            filteredData.forEach(property => {
+                if (property.lat && property.lng) {
+                    const marker = L.marker([property.lat, property.lng]).addTo(map);
+                    marker.bindPopup(`
+                        <div class="p-2">
+                            <h4 class="font-semibold">${property.address}</h4>
+                            <p class="text-sm">Submarket: ${property.submarket || 'N/A'}</p>
+                            <p class="text-sm">Units: ${property.units ? property.units.toLocaleString() : 'N/A'}</p>
+                            <p class="text-sm">Status: ${property.status || 'N/A'}</p>
+                            ${property.pressLink ? `<a href="${property.pressLink}" target="_blank" class="text-blue-600 text-sm">View Article</a>` : ''}
+                        </div>
+                    `);
+                }
+            });
+        }
+
+        // Initialize charts
+        function initCharts() {
+            initStatusChart();
+            initSubmarketChart();
+        }
+
+        function initStatusChart() {
+            const ctx = document.getElementById('statusChart').getContext('2d');
+            const statusCounts = {};
+            
+            filteredData.forEach(property => {
+                const status = property.status || 'Unknown';
+                statusCounts[status] = (statusCounts[status] || 0) + 1;
+            });
+
+            statusChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(statusCounts),
+                    datasets: [{
+                        data: Object.values(statusCounts),
+                        backgroundColor: [
+                            '#1770B0',
+                            '#10b981',
+                            '#f59e0b',
+                            '#ef4444',
+                            '#8b5cf6',
+                            '#06b6d4',
+                            '#84cc16'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function initSubmarketChart() {
+            const ctx = document.getElementById('submarketChart').getContext('2d');
+            const submarketUnits = {};
+            
+            filteredData.forEach(property => {
+                const submarket = property.submarket || 'Unknown';
+                submarketUnits[submarket] = (submarketUnits[submarket] || 0) + (property.units || 0);
+            });
+
+            const sortedData = Object.entries(submarketUnits)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 10);
+
+            submarketChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedData.map(([label]) => label),
+                    datasets: [{
+                        label: 'Units',
+                        data: sortedData.map(([, value]) => value),
+                        backgroundColor: '#1770B0'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const submarketFilter = document.getElementById('submarketFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const minUnits = parseInt(document.getElementById('minUnits').value) || 0;
+            const maxUnits = parseInt(document.getElementById('maxUnits').value) || Infinity;
+
+            filteredData = propertyData.filter(property => {
+                // Search filter
+                if (searchTerm && !(
+                    (property.address || '').toLowerCase().includes(searchTerm) ||
+                    (property.submarket || '').toLowerCase().includes(searchTerm) ||
+                    (property.notes || '').toLowerCase().includes(searchTerm) ||
+                    (property.type || '').toLowerCase().includes(searchTerm) ||
+                    (property.status || '').toLowerCase().includes(searchTerm)
+                )) {
+                    return false;
+                }
+
+                // Other filters
+                if (submarketFilter !== 'all' && property.submarket !== submarketFilter) return false;
+                if (typeFilter !== 'all' && property.type !== typeFilter) return false;
+                if (statusFilter !== 'all' && property.status !== statusFilter) return false;
+
+                const units = property.units || 0;
+                if (units < minUnits || units > maxUnits) return false;
+
+                return true;
+            });
+
+            updateStats();
+            
+            const viewMode = document.getElementById('viewMode').value;
+            if (viewMode === 'table') {
+                renderTable();
+            } else {
+                renderCards();
+            }
+            
+            updateMapMarkers();
+            updateCharts();
+        }
+
+        // Update charts with filtered data
+        function updateCharts() {
+            // Update status chart
+            const statusCounts = {};
+            filteredData.forEach(property => {
+                const status = property.status || 'Unknown';
+                statusCounts[status] = (statusCounts[status] || 0) + 1;
+            });
+
+            statusChart.data.labels = Object.keys(statusCounts);
+            statusChart.data.datasets[0].data = Object.values(statusCounts);
+            statusChart.update();
+
+            // Update submarket chart
+            const submarketUnits = {};
+            filteredData.forEach(property => {
+                const submarket = property.submarket || 'Unknown';
+                submarketUnits[submarket] = (submarketUnits[submarket] || 0) + (property.units || 0);
+            });
+
+            const sortedData = Object.entries(submarketUnits)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 10);
+
+            submarketChart.data.labels = sortedData.map(([label]) => label);
+            submarketChart.data.datasets[0].data = sortedData.map(([, value]) => value);
+            submarketChart.update();
+        }
+
+        // Toggle view mode
+        function toggleView() {
+            const viewMode = document.getElementById('viewMode').value;
+            const tableView = document.getElementById('tableView');
+            const cardsView = document.getElementById('cardsView');
+
+            if (viewMode === 'table') {
+                tableView.classList.remove('hidden');
+                cardsView.classList.add('hidden');
+                renderTable();
+            } else {
+                tableView.classList.add('hidden');
+                cardsView.classList.remove('hidden');
+                renderCards();
+            }
+        }
+
+        // Export CSV
+        function exportCSV() {
+            const headers = ['Address', 'Submarket', 'Units', 'GSF', 'Type', 'Status', 'Notes', 'Eligible', 'Press Link'];
+            
+            let csv = headers.join(',') + '\n';
+            
+            filteredData.forEach(row => {
+                const values = [
+                    `"${(row.address || '').replace(/"/g, '""')}"`,
+                    `"${(row.submarket || '').replace(/"/g, '""')}"`,
+                    row.units || '',
+                    row.gsf || '',
+                    `"${(row.type || '').replace(/"/g, '""')}"`,
+                    `"${(row.status || '').replace(/"/g, '""')}"`,
+                    `"${(row.notes || '').replace(/"/g, '""')}"`,
+                    row.eligible ? 'Yes' : 'No',
+                    `"${(row.pressLink || '').replace(/"/g, '""')}"`
+                ];
+                csv += values.join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `manhattan_office_conversions_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+
+            showNotification('CSV export completed!', 'success');
+        }
+
+        // Refresh data
+        function refreshData() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('submarketFilter').value = 'all';
+            document.getElementById('typeFilter').value = 'all';
+            document.getElementById('statusFilter').value = 'all';
+            document.getElementById('minUnits').value = '';
+            document.getElementById('maxUnits').value = '';
+            
+            filteredData = [...propertyData];
+            updateStats();
+            renderTable();
+            updateMapMarkers();
+            updateCharts();
+            
+            showNotification('Data refreshed successfully!', 'success');
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.textContent = message;
+            
+            container.appendChild(notification);
+            
+            // Show notification
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            // Hide and remove notification
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    container.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Dark mode toggle
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            darkModeToggle.addEventListener('change', function() {
+                document.documentElement.classList.toggle('dark', this.checked);
+            });
+        }
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
